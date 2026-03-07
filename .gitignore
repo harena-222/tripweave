@@ -8,3 +8,4 @@ src/package-lock.json
 backend-ai/tripweave_env/
 .venv
 backend-ai/.env
+tripweave.db

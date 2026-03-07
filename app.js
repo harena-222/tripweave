@@ -7,9 +7,10 @@ const port = 3000;
 app.use(express.json());
 app.use(cors());
 
-// ★ここを追加：ルート（'/'）へのアクセスを許可する
+app.use(express.static(path.join(__dirname, 'dist')));
+
 app.get('/', (req, res) => {
-  res.send('TripWeave Backend is running!');
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // データの受け取り用API
