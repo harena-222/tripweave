@@ -4,7 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title></title>
+  <title>Make Your Trip</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <link rel="stylesheet" href="css/style.css">
   <meta name="description" content="">
 
@@ -22,15 +25,22 @@
   <meta name="theme-color" content="#fafafa">
 </head>
 
-<body>
-  <div class="container">
-    <h1>Make Your Trip</h1>
+<body class="bg-gradient-to-br from-pink-100 to-indigo-100 min-h-screen flex items-center justify-center">
+  <div class="container max-w-lg mx-auto p-8 bg-white shadow-xl rounded-2xl">
+    <h1 class="text-3xl font-extrabold text-pink-500 mb-6 text-center">Make Your Trip</h1>
 
-    <input type="text" id="userInput" placeholder="How can I help you？">
-    <button id="sendBtn">Plan My Trip</button>
+    <form id="tripForm" class="flex flex-col gap-4">
+      <input type="text" id="userInput"
+        class="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-pink-400 focus:outline-none transition"
+        placeholder="How can I help you?" required>
 
-    <p id="result"></p>
+      <button type="submit" id="sendBtn"
+        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
+        Plan My Trip
+      </button>
+    </form>
 
+    <p id="result" class="mt-6 text-gray-700 leading-relaxed"></p>
   </div>
   <script>
     document.getElementById('sendBtn').onclick = async () => {
