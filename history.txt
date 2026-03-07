@@ -3,3 +3,4 @@
 SELECT * FROM traveller;
 SELECT * FROM traveller
 CREATE traveller:idiots SET \n    name = "The Weekend Group",\n    job = "Graduate Students",\n    age = 24,\n    preferences = {\n        interests: ["Budget-friendly dining", "Historical landmarks", "Local markets"],\n        walking_preference: "prefers public transport over walking due to heavy luggage",\n        urgency: "moderate"\n    },\n    current_status = {\n        location: "South Bank, London",\n        current_condition: "arrived via train, looking for immediate lunch options",\n        date_reference: "Saturday afternoon"\n    },\n    updated_at = time::now();
+SELECT * FROM traveller;

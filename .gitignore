@@ -7,3 +7,4 @@ src/package-lock.json
 **/__pycache__/
 backend-ai/tripweave_env/
 .venv
+backend-ai/.env
