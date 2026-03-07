@@ -1,4 +1,5 @@
 import os
+from typing import Any
 from surrealdb import AsyncSurreal
 
 # Create a global connection string from .env [cite: 2026-03-07]
@@ -24,3 +25,46 @@ async def get_user_profile(traveller_id: str):
         print(f"--- [SurrealDB] Successfully fetched: {profile} ---")
 
         return profile if profile else {"message": "Profile not found"}
+
+async def save_day_plan(day_plan_payload: dict) -> dict:
+    day_plan_id = day_plan_payload["id"]
+    data = {k: v for k, v in day_plan_payload.items() if k != "id"}
+    return await upsert_record(day_plan_id, data)
+
+
+async def save_preference_update(preference_payload: dict) -> dict:
+    traveller_id = preference_payload["id"]
+    data = {k: v for k, v in preference_payload.items() if k != "id"}
+    return await upsert_record(traveller_id, data)
+
+
+async def upsert_record(
+    db: AsyncSurreal,
+    record_id: str,
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Create a record if it does not exist, otherwise merge the new data into it.
+
+    Parameters
+    ----------
+    db:
+        An active SurrealDB client connection.
+    record_id:
+        The full record ID, for example "traveller:idiots".
+    data:
+        The fields to store on the record.
+
+    Returns
+    -------
+    dict[str, Any]
+        The created or updated record data.
+    """
+    existing = await db.select(record_id)
+
+    if existing:
+        updated = await db.merge(record_id, data)
+        return updated if updated else {"id": record_id, **data}
+
+    created = await db.create(record_id, data)
+    return created if created else {"id": record_id, **data}

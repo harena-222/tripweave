@@ -1,54 +1,77 @@
 import os
 from dotenv import load_dotenv
+from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from core.graph import compiled_graph
+from pydantic import BaseModel, Field
+from core.workflow import build_graph
+from core.nodes.extract_request_meaning import extract_request_meaning, TripWeaveExtraction
+import json
 
-# Load environment variables from .env
-load_dotenv()
+# 1. Initialize FastAPI app
+app = FastAPI()
 
-app = FastAPI(title="TripWeave AI Backend")
-
-# 1. Define the Request Body (Matching what Node.js sends)
+# 3. Request model for the API endpoint
 class UserRequest(BaseModel):
     raw_prompt: str
     traveller_id: str
 
-# 2. Health Check (To see if the server is alive)
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "model": "gemini-3.1-flash-lite"}
+class ExtractionData(BaseModel):
+    intent: str
+    extracted_entities: Dict[str, Any]
+    final_summary: Optional[str] = None
+    disruption_payload: Optional[Dict[str, Any]] = None
+    decision_payload: Optional[Dict[str, Any]] = None
+    relationship_updates: List[Dict[str, Any]] = Field(default_factory=list)
 
-# 3. The Main AI Endpoint
-@app.post("/ai/process")
-async def process_meaning(request: UserRequest):
+class ProcessResponse(BaseModel):
+    status: str
+    data: ExtractionData
+    next_action: str
+
+app_workflow = build_graph()
+
+# 4. API Endpoints
+import logging
+
+# Configure logging to see the state in the console
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.post("/ai/process", response_model=ProcessResponse)
+async def process(request: UserRequest):
     try:
-        print(f"--- 🚀 Starting Graph for Traveller: {request.traveller_id} ---")
+        inputs = {"raw_prompt": request.raw_prompt, "traveller_id": request.traveller_id}
+        config = {"configurable": {"thread_id": request.traveller_id}}
 
-        # Initial State to feed into LangGraph
-        initial_state = {
-            "raw_prompt": request.raw_prompt,
-            "traveller_id": request.traveller_id,
-            "intent": "",
-            "extracted_entities": {},
-            "user_context": {},
-            "final_answer": ""
-        }
+        final_state = await app_workflow.ainvoke(inputs, config=config)
 
-        # Run the LangGraph (Asynchronously)
-        # .ainvoke() starts the flow from Node 1
-        result = await compiled_graph.ainvoke(initial_state)
+        # LOG THE RESPONSE
+        logger.info(f"Final State for {request.traveller_id}: {final_state}")
 
-        return {
+        response_data = {
             "status": "success",
-            "data": result
+            "data": {
+                "intent": final_state.get("intent", "unknown"),
+                "extracted_entities": final_state.get("extracted_entities", {}),
+                "final_summary": final_state.get("final_summary"),
+                "disruption_payload": final_state.get("disruption_payload"),
+                "decision_payload": final_state.get("decision_payload"),
+                "relationship_updates": final_state.get("relationship_updates", [])
+            },
+            "next_action": final_state.get("next_action", "unknown_flow"),
         }
+
+        # 2. Log the outgoing response for debugging
+        # Using json.dumps ensures the log is easy to read in your terminal
+        logger.info(f"--- OUTGOING API RESPONSE ---\n{json.dumps(response_data, indent=2)}")
+
+        # 3. Return the response
+        return response_data
 
     except Exception as e:
-        print(f"❌ Error in AI Processing: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error processing request: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"AI Processing Error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
-    # Run the server on Port 8000
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
