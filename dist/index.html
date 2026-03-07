@@ -45,7 +45,7 @@
   <script>
     // フォームの送信イベントを直接拾う（Enterキーとクリック両方に対応）
     document.getElementById('tripForm').onsubmit = async (event) => {
-      event.preventDefault(); // 画面リロードを防止
+      event.preventDefault();
 
       const input = document.getElementById('userInput').value.trim();
       const resultElement = document.getElementById('result');
@@ -53,8 +53,8 @@
       if (!input) return;
 
       resultElement.innerHTML = `
-            <div class="animate-pulse text-gray-500 italic">Designing your travel plan...</div>
-        `;
+        <div class="animate-pulse text-gray-500 italic">Designing your travel plan for ${input}...</div>
+    `;
 
       try {
         const response = await fetch('http://localhost:3000/api/trip', {
@@ -65,20 +65,35 @@
 
         if (!response.ok) throw new Error(`Status: ${response.status}`);
 
-        const data = await response.json();
-        const details = data.details.extracted_entities;
+        const resData = await response.json();
+        // Pythonからの入れ子構造 (aiResult.data) を考慮して抽出
+        const aiData = resData.details;
+        const entities = aiData.extracted_entities;
 
+        // ★ここで表示内容を構築
         resultElement.innerHTML = `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-pink-100">
-                    <h3 class="text-lg font-bold text-pink-500 mb-3">Plan Found!</h3>
-                    <div class="space-y-2 text-sm text-gray-700">
-                        <p><span class="font-bold">Intent:</span> ${data.message}</p>
-                        <p><span class="font-bold">Destination:</span> ${details.destination || 'N/A'}</p>
-                        <p><span class="font-bold">Interests:</span> ${details.interests.join(', ') || 'N/A'}</p>
-                    </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-pink-100 space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📍</span>
+                    <h3 class="text-xl font-bold text-gray-800">Location: ${entities.destination || 'Not specified'}</h3>
                 </div>
-            `;
+
+                <div class="border-t border-gray-100 pt-4">
+                    <p class="text-sm font-semibold text-pink-500 uppercase tracking-wider mb-1">Plan Summary</p>
+                    <p class="text-gray-700 leading-relaxed text-lg">
+                        ${aiData.final_summary.replace('{destination}', entities.destination || 'your destination').replace('{date_reference}', entities.date_reference || 'soon')}
+                    </p>
+                </div>
+
+                ${entities.interests.length > 0 ? `
+                <div class="flex flex-wrap gap-2 pt-2">
+                    ${entities.interests.map(interest => `<span class="bg-indigo-50 text-indigo-600 text-xs px-3 py-1 rounded-full">#${interest}</span>`).join('')}
+                </div>
+                ` : ''}
+            </div>
+        `;
       } catch (error) {
+        console.error(error);
         resultElement.innerHTML = `<p class="text-red-500 font-bold">Failed to connect. Try again later.</p>`;
       }
     };
