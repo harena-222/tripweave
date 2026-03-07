@@ -23,13 +23,15 @@
 </head>
 
 <body>
-  <h1>Make Your Trip</h1>
+  <div class="container">
+    <h1>Make Your Trip</h1>
 
-  <input type="text" id="userInput" placeholder="How can I help you？">
-  <button id="sendBtn">⇒</button>
+    <input type="text" id="userInput" placeholder="How can I help you？">
+    <button id="sendBtn">Plan My Trip</button>
 
-  <p id="result"></p>
+    <p id="result"></p>
 
+  </div>
   <script>
     document.getElementById('sendBtn').onclick = async () => {
       const input = document.getElementById('userInput').value;
@@ -64,6 +66,7 @@
         resultElement.innerText = "Sorry, we couldn't connect to the server. Please try again later.";
       }
     };
+
   </script>
 </body>
 
