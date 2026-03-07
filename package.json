@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/h5bp/html5-boilerplate.git"
+    "url": "git+https://github.com/h5bp/html5-boilerplate.git"
   },
   "license": "MIT",
   "files": [
@@ -58,5 +58,16 @@
       "src": "src",
       "test": "test"
     }
+  },
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "author": "",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }

@@ -31,11 +31,20 @@
   <p id="result"></p>
 
   <script>
-    // ボタンが押されたときの動き
-    document.getElementById('sendBtn').onclick = () => {
+    document.getElementById('sendBtn').onclick = async () => {
       const input = document.getElementById('userInput').value;
-      // 入力された内容を画面に出す
-      document.getElementById('result').innerText = "I love you!!!: " + input;
+
+      // サーバーにデータを送信する
+      const response = await fetch('http://localhost:3000/api/trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ destination: input }) // データをJSON形式に変換
+      });
+
+      const data = await response.json();
+
+      // サーバーからの返事を画面に表示
+      document.getElementById('result').innerText = data.message;
     };
   </script>
 </body>
