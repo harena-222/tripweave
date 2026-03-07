@@ -35,16 +35,22 @@
       const input = document.getElementById('userInput').value;
 
       // サーバーにデータを送信する
-      const response = await fetch('http://localhost:3000/api/trip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destination: input }) // データをJSON形式に変換
-      });
-
-      const data = await response.json();
-
-      // サーバーからの返事を画面に表示
-      document.getElementById('result').innerText = data.message;
+      try {
+        const response = await fetch('http://localhost:3000/api/trip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ destination: input }) // データをJSON形式に変換
+        });
+        if (!response.ok) {
+          throw new Error(`server response error: ${response.status}`);
+        }
+        const data = await response.json();
+        // サーバーからの返事を画面に表示
+        document.getElementById('result').innerText = data.message;
+      } catch (error) {
+        console.error("connection failed:", error);
+        document.getElementById('result').innerText = "Sorry, we couldn't connect to the server. Please try again later.";
+      }
     };
   </script>
 </body>
