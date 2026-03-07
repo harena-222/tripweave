@@ -1,18 +1,26 @@
-from typing import TypedDict, List, Optional
+from __future__ import annotations
+from typing import Optional, TypedDict, Dict, Any, List
+from core.domain.intents import TripIntent
 
 class TripWeaveState(TypedDict):
-    # The original user input string
     raw_prompt: str
-    # Unique ID for the user (e.g., 'traveller:moon_inzoo')
-    traveller_id: str
+    intent: Optional[TripIntent]
+    # ADD THIS LINE:
+    extracted_entities: Optional[Dict[str, Any]]
 
-    # Parsed intent from Node 1 (e.g., 'create_trip')
-    intent: str
-    # Extracted entities like destination or dates
-    extracted_entities: dict
-
-    # Collected context from SurrealDB, Weather API, etc.
+    # Keep your existing fields
+    activity_name: Optional[str]
+    target_day_phrase: Optional[str]
+    condition: Optional[str]
+    preference: Optional[str]
+    traveller_id: Optional[str]
+    trip_id: Optional[str]
+    final_summary: Optional[str]
     user_context: dict
-
-    # The final natural language response from the AI
+    validation_errors: Optional[list[str]]
+    # If you are using next_action in your API, add it here too
+    next_action: Optional[str]
+    disruption_payload: Optional[Dict[str, Any]]
+    decision_payload: Optional[Dict[str, Any]]
+    relationship_updates: Optional[List[Dict[str, Any]]]
     final_answer: str
