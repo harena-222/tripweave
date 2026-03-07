@@ -45,8 +45,13 @@
           throw new Error(`server response error: ${response.status}`);
         }
         const data = await response.json();
-        // サーバーからの返事を画面に表示
-        document.getElementById('result').innerText = data.message;
+
+        const details = data.details.extracted_entities;
+        document.getElementById('result').innerHTML = `
+            <strong>Intent:</strong> ${data.message}<br>
+            <strong>Destination:</strong> ${details.destination || 'Not specified'}<br>
+            <strong>Interests:</strong> ${details.interests.join(', ') || 'None'}
+        `;
       } catch (error) {
         console.error("connection failed:", error);
         document.getElementById('result').innerText = "Sorry, we couldn't connect to the server. Please try again later.";
