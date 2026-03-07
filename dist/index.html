@@ -43,18 +43,18 @@
     <p id="result" class="mt-6 text-gray-700 leading-relaxed"></p>
   </div>
   <script>
-    document.getElementById('sendBtn').onclick = async () => {
-      const inputElement = document.getElementById('userInput');
-      const input = inputElement.value.trim();
+    // フォームの送信イベントを直接拾う（Enterキーとクリック両方に対応）
+    document.getElementById('tripForm').onsubmit = async (event) => {
+      event.preventDefault(); // 画面リロードを防止
+
+      const input = document.getElementById('userInput').value.trim();
       const resultElement = document.getElementById('result');
 
-      // 1. Check if input is empty
-      if (!input) {
-        resultElement.innerHTML = "<em>What is your destination?</em>";
-        return;
-      }
-      // 1. Show loading state
-      resultElement.innerHTML = "<em>Designing your travel plan... Please wait a moment.</em>";
+      if (!input) return;
+
+      resultElement.innerHTML = `
+            <div class="animate-pulse text-gray-500 italic">Designing your travel plan...</div>
+        `;
 
       try {
         const response = await fetch('http://localhost:3000/api/trip', {
@@ -63,26 +63,25 @@
           body: JSON.stringify({ destination: input })
         });
 
-        if (!response.ok) {
-          throw new Error(`server response error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Status: ${response.status}`);
 
         const data = await response.json();
         const details = data.details.extracted_entities;
 
-        // 2. Show success result
         resultElement.innerHTML = `
-            <strong>Intent:</strong> ${data.message}<br>
-            <strong>Destination:</strong> ${details.destination || 'Not specified'}<br>
-            <strong>Interests:</strong> ${details.interests.join(', ') || 'None'}
-        `;
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-pink-100">
+                    <h3 class="text-lg font-bold text-pink-500 mb-3">Plan Found!</h3>
+                    <div class="space-y-2 text-sm text-gray-700">
+                        <p><span class="font-bold">Intent:</span> ${data.message}</p>
+                        <p><span class="font-bold">Destination:</span> ${details.destination || 'N/A'}</p>
+                        <p><span class="font-bold">Interests:</span> ${details.interests.join(', ') || 'N/A'}</p>
+                    </div>
+                </div>
+            `;
       } catch (error) {
-        console.error("connection failed:", error);
-        // 3. Show error state
-        resultElement.innerText = "Sorry, we couldn't connect to the server. Please try again later.";
+        resultElement.innerHTML = `<p class="text-red-500 font-bold">Failed to connect. Try again later.</p>`;
       }
     };
-
   </script>
 </body>
 
