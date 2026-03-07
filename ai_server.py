@@ -25,7 +25,7 @@ class UserRequest(BaseModel):
 
 # 4. Set up the LLM (Ensure GOOGLE_API_KEY is in your environment)
 # You can also set it manually: os.environ["GOOGLE_API_KEY"] = "YOUR_KEY"
-llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite-preview", temperature=0)
 structured_llm = llm.with_structured_output(TripWeaveExtraction)
 
 system_prompt = """You are an expert travel assistant logic router for TripWeave.
