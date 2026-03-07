@@ -19,3 +19,11 @@ def route_by_intent(state: TripWeaveState) -> str:
 
     print(f"--- ROUTER WARNING: Intent '{intent}' not recognized, falling back to explain ---")
     return "explain"
+
+def route_after_handler(state: TripWeaveState) -> str:
+    next_action = state.get("next_action")
+
+    if next_action in {"create_day_plan_flow", "replan_day_flow", "explain_change_flow"}:
+        return "suggest"
+
+    return "persist"

@@ -2,36 +2,90 @@ from __future__ import annotations
 import os
 from typing import Any
 from surrealdb import AsyncSurreal
+try:
+    from surrealdb import RecordID
+except Exception:
+    RecordID = None
 
 # Create a global connection string from .env [cite: 2026-03-07]
 DB_URL = os.getenv("SURREAL_DB_URL", "ws://localhost:8001/rpc")
+SURREAL_USER = os.getenv("SURREAL_USER", "root")
+SURREAL_PASS = os.getenv("SURREAL_PASS", "root")
+SURREAL_NS = os.getenv("SURREAL_NS", "tripweave_ns")
+SURREAL_DB = os.getenv("SURREAL_DB", "tripweave_db")
 
-async def get_user_profile(traveller_id: str):
+async def get_user_profile(traveller_id: str) -> dict[str, Any]:
     """
-    Connects to SurrealDB and fetches the profile for the specific traveller. [cite: 2026-03-07]
+    Fetch the traveller profile from SurrealDB.
+    Example traveller_id: "traveller:idiots"
     """
     async with AsyncSurreal(DB_URL) as db:
-        # 1. Sign in with credentials from .env [cite: 2026-03-07]
-        await db.signin({
-            "username": os.getenv("SURREAL_USER", "root"),
-            "password": os.getenv("SURREAL_PASS", "root")
-        })
+        await db.signin(
+            {
+                "username": SURREAL_USER,
+                "password": SURREAL_PASS,
+            }
+        )
+        await db.use(SURREAL_NS, SURREAL_DB)
 
-        # 2. Select the Namespace and Database [cite: 2026-03-07]
-        await db.use(os.getenv("SURREAL_NS", "tripweave_ns"), os.getenv("SURREAL_DB", "tripweave_db"))
-
-        # 3. Select the traveller record [cite: 2026-03-07]
-        # Example traveller_id: "traveller:idiots"
         profile = await db.select(traveller_id)
-        print(f"--- [SurrealDB] Successfully fetched: {profile} ---")
+        sanitised_profile = serialise_surreal_value(profile)
+        print(f"--- [SurrealDB] Successfully fetched: {sanitised_profile} ---")
 
-        return profile if profile else {"message": "Profile not found"}
+        return sanitised_profile or {"message": "Profile not found", "id": traveller_id}
 
 async def save_day_plan(day_plan_payload: dict) -> dict:
     day_plan_id = day_plan_payload["id"]
     data = {k: v for k, v in day_plan_payload.items() if k != "id"}
-    return await upsert_record(day_plan_id, data)
 
+    print(f"--- [SurrealDB] save_day_plan called with id={day_plan_id} data={data} ---")
+
+    async with AsyncSurreal(DB_URL) as db:
+        await db.signin({
+            "username": SURREAL_USER,
+            "password": SURREAL_PASS,
+        })
+        await db.use(SURREAL_NS, SURREAL_DB)
+
+        saved = await upsert_record(db, day_plan_id, data)
+        print(f"--- [SurrealDB] save_day_plan result: {saved} ---")
+        return saved
+
+async def save_trip(trip_payload: dict) -> dict:
+    trip_id = trip_payload["id"]
+    data = {k: v for k, v in trip_payload.items() if k != "id"}
+
+    print(f"--- [SurrealDB] save_trip called with id={trip_id} data={data} ---")
+
+    async with AsyncSurreal(DB_URL) as db:
+        await db.signin({
+            "username": SURREAL_USER,
+            "password": SURREAL_PASS,
+        })
+        await db.use(SURREAL_NS, SURREAL_DB)
+
+        saved = await upsert_record(db, trip_id, data)
+        print(f"--- [SurrealDB] Saved trip: {saved} ---")
+        return saved
+
+async def persist_relationship_updates(relationship_updates: list[dict]) -> None:
+    async with AsyncSurreal(DB_URL) as db:
+        await db.signin({
+            "username": SURREAL_USER,
+            "password": SURREAL_PASS,
+        })
+        await db.use(SURREAL_NS, SURREAL_DB)
+
+        for update in relationship_updates:
+            action = update["action"]
+            relation = update["relation"]
+            from_id = update["from"]
+            to_id = update["to"]
+
+            if action == "create":
+                await db.query(f"RELATE {from_id}->{relation}->{to_id};")
+            elif action == "remove":
+                await db.query(f"DELETE {relation} WHERE out = {from_id} AND in = {to_id};")
 
 async def save_preference_update(preference_payload: dict) -> dict:
     traveller_id = preference_payload["id"]
@@ -74,30 +128,30 @@ async def upsert_record(
     record_id: str,
     data: dict[str, Any],
 ) -> dict[str, Any]:
-    """
-    Create a record if it does not exist, otherwise merge the new data into it.
+    print(f"--- [SurrealDB] upsert_record record_id={record_id} data={data} ---")
 
-    Parameters
-    ----------
-    db:
-        An active SurrealDB client connection.
-    record_id:
-        The full record ID, for example "traveller:idiots".
-    data:
-        The fields to store on the record.
-
-    Returns
-    -------
-    dict[str, Any]
-        The created or updated record data.
-    """
     existing = await db.select(record_id)
+    print(f"--- [SurrealDB] existing={existing} ---")
+
+    # If SurrealDB returns an error string, treat it as "not found"
+    if isinstance(existing, str):
+        existing = None
 
     if existing:
         updated = await db.merge(record_id, data)
+        print(f"--- [SurrealDB] updated={updated} ---")
+
+        if isinstance(updated, str):
+            raise RuntimeError(updated)
+
         return updated if updated else {"id": record_id, **data}
 
     created = await db.create(record_id, data)
+    print(f"--- [SurrealDB] created={created} ---")
+
+    if isinstance(created, str):
+        raise RuntimeError(created)
+
     return created if created else {"id": record_id, **data}
 
 async def persist_replan_result(
@@ -139,3 +193,25 @@ async def persist_replan_result(
                     saved["relationships_applied"] += 1
 
         return saved
+
+def serialise_surreal_value(value: Any) -> Any:
+    """
+    Convert SurrealDB SDK values into plain Python values
+    that LangGraph can checkpoint safely.
+    """
+    if RecordID is not None and isinstance(value, RecordID):
+        return str(value)
+
+    if isinstance(value, dict):
+        return {
+            str(key): serialise_surreal_value(val)
+            for key, val in value.items()
+        }
+
+    if isinstance(value, list):
+        return [serialise_surreal_value(item) for item in value]
+
+    if isinstance(value, tuple):
+        return [serialise_surreal_value(item) for item in value]
+
+    return value

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -11,13 +13,15 @@ from core.nodes.handlers import (
     handle_update_preference,
     handle_explain_change,
 )
-from core.routing import route_by_intent
+from core.nodes.suggestions import generate_alternative_suggestions
+from core.nodes.persist_to_surrealdb import persist_to_surrealdb
+from core.nodes.finalise_user_answer import finalise_user_answer
+from core.routing import route_by_intent, route_after_handler
 
 
 def build_graph():
     builder = StateGraph(TripWeaveState)
 
-    # 1. Register all nodes
     builder.add_node("extract_request_meaning", extract_request_meaning)
     builder.add_node("retrieve_memory", retrieve_memory)
 
@@ -27,11 +31,13 @@ def build_graph():
     builder.add_node("handle_update_preference", handle_update_preference)
     builder.add_node("handle_explain_change", handle_explain_change)
 
-    # 2. Define the entry flow
+    builder.add_node("generate_alternative_suggestions", generate_alternative_suggestions)
+    builder.add_node("persist_to_surrealdb", persist_to_surrealdb)
+    builder.add_node("finalise_user_answer", finalise_user_answer)
+
     builder.add_edge(START, "extract_request_meaning")
     builder.add_edge("extract_request_meaning", "retrieve_memory")
 
-    # 3. Branch by intent after memory has been loaded
     builder.add_conditional_edges(
         "retrieve_memory",
         route_by_intent,
@@ -44,11 +50,49 @@ def build_graph():
         },
     )
 
-    # 4. All handlers go to END
-    builder.add_edge("handle_create_day_plan", END)
-    builder.add_edge("handle_replan_day", END)
-    builder.add_edge("handle_move_activity", END)
-    builder.add_edge("handle_update_preference", END)
-    builder.add_edge("handle_explain_change", END)
+    builder.add_conditional_edges(
+        "handle_create_day_plan",
+        route_after_handler,
+        {
+            "suggest": "generate_alternative_suggestions",
+            "persist": "persist_to_surrealdb",
+        },
+    )
+    builder.add_conditional_edges(
+        "handle_replan_day",
+        route_after_handler,
+        {
+            "suggest": "generate_alternative_suggestions",
+            "persist": "persist_to_surrealdb",
+        },
+    )
+    builder.add_conditional_edges(
+        "handle_move_activity",
+        route_after_handler,
+        {
+            "suggest": "generate_alternative_suggestions",
+            "persist": "persist_to_surrealdb",
+        },
+    )
+    builder.add_conditional_edges(
+        "handle_update_preference",
+        route_after_handler,
+        {
+            "suggest": "generate_alternative_suggestions",
+            "persist": "persist_to_surrealdb",
+        },
+    )
+    builder.add_conditional_edges(
+        "handle_explain_change",
+        route_after_handler,
+        {
+            "suggest": "generate_alternative_suggestions",
+            "persist": "persist_to_surrealdb",
+        },
+    )
+
+    builder.add_edge("generate_alternative_suggestions", "persist_to_surrealdb")
+    builder.add_edge("persist_to_surrealdb", "finalise_user_answer")
+    builder.add_edge("finalise_user_answer", END)
 
     return builder.compile(checkpointer=InMemorySaver())

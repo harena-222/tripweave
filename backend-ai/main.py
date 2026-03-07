@@ -38,7 +38,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @app.post("/ai/process", response_model=ProcessResponse)
-async def process(request: UserRequest):
+async def process_meaning(request: UserRequest):
     try:
         inputs = {"raw_prompt": request.raw_prompt, "traveller_id": request.traveller_id}
         config = {"configurable": {"thread_id": request.traveller_id}}
@@ -57,6 +57,25 @@ async def process(request: UserRequest):
                 "disruption_payload": final_state.get("disruption_payload"),
                 "decision_payload": final_state.get("decision_payload"),
                 "relationship_updates": final_state.get("relationship_updates", [])
+            },
+            "next_action": final_state.get("next_action", "unknown_flow"),
+        }
+
+        response_data = {
+            "status": "success",
+            "data": {
+                "intent": final_state.get("intent", "unknown"),
+                "extracted_entities": final_state.get("extracted_entities", {}),
+                "final_summary": final_state.get("final_summary"),
+                "final_answer": final_state.get("final_answer"),
+                "alternative_suggestions": final_state.get("alternative_suggestions", []),
+                "trip_id": final_state.get("trip_id"),
+                "trip_payload": final_state.get("trip_payload"),
+                "day_plan_payload": final_state.get("day_plan_payload"),
+                "preference_payload": final_state.get("preference_payload"),
+                "disruption_payload": final_state.get("disruption_payload"),
+                "decision_payload": final_state.get("decision_payload"),
+                "relationship_updates": final_state.get("relationship_updates", []),
             },
             "next_action": final_state.get("next_action", "unknown_flow"),
         }
