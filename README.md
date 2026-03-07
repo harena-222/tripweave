@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # [HTML5 Boilerplate](https://html5boilerplate.com/)
 
 [![Build status](https://github.com/h5bp/html5-boilerplate/workflows/Build%20status/badge.svg)](https://github.com/h5bp/html5-boilerplate/actions?query=workflow%3A%22Build+status%22+branch%3Amain)
@@ -119,3 +120,6 @@ involved, please take a moment to review the [guidelines](.github/CONTRIBUTING.m
 ## License
 
 The code is available under the [MIT license](LICENSE.txt).
+=======
+# tripweave
+>>>>>>> 7bc46b450fbd92ec54bfe0819752ea78bf2b4373
