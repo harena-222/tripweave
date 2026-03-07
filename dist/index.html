@@ -23,12 +23,21 @@
 </head>
 
 <body>
+  <h1>Make Your Trip</h1>
 
-  <!-- Add your site or application content here -->
-  <h1>TripWeave</h1>
-  <p>旅のプランをAIと織りなそう！</p>
-  <script src="js/app.js"></script>
+  <input type="text" id="userInput" placeholder="どこに行きたい？">
+  <button id="sendBtn">決定</button>
 
+  <p id="result"></p>
+
+  <script>
+    // ボタンが押されたときの動き
+    document.getElementById('sendBtn').onclick = () => {
+      const input = document.getElementById('userInput').value;
+      // 入力された内容を画面に出す
+      document.getElementById('result').innerText = "Hello, World! あなたが選んだのは: " + input;
+    };
+  </script>
 </body>
 
 </html>
