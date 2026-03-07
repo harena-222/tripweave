@@ -30,9 +30,9 @@
     <h1 class="text-3xl font-extrabold text-pink-500 mb-6 text-center">Make Your Trip</h1>
 
     <form id="tripForm" class="flex flex-col gap-4">
-      <input type="text" id="userInput"
-        class="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-pink-400 focus:outline-none transition"
-        placeholder="How can I help you?" required>
+      <textarea id="userInput"
+        class="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-pink-400 focus:outline-none transition resize-none overflow-y-auto min-h-[48px] max-h-32"
+        placeholder="How can I help you?" required></textarea>
 
       <button type="submit" id="sendBtn"
         class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
