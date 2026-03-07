@@ -34,9 +34,15 @@
   </div>
   <script>
     document.getElementById('sendBtn').onclick = async () => {
-      const input = document.getElementById('userInput').value;
+      const inputElement = document.getElementById('userInput');
+      const input = inputElement.value.trim();
       const resultElement = document.getElementById('result');
 
+      // 1. Check if input is empty
+      if (!input) {
+        resultElement.innerHTML = "<em>What is your destination?</em>";
+        return;
+      }
       // 1. Show loading state
       resultElement.innerHTML = "<em>Designing your travel plan... Please wait a moment.</em>";
 
