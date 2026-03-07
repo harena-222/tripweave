@@ -106,7 +106,7 @@ async def process_meaning(request: UserRequest):
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 
 if __name__ == "__main__":
     import uvicorn
