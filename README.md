@@ -1,11 +1,3 @@
-README.md Template
-Markdown
-全体的に必要な情報が網羅されていて、非常に分かりやすいREADMEになっています！ハッカソンの審査員も、この手順通りに進めれば動かせるはずです。
-
-ただ、情報の重複（Prerequisitesが2回出てくるなど）を整理し、Markdownのコードブロック（黒い背景の枠）を正しく閉じることで、よりプロフェッショナルな見た目になります。
-
-最終版として、きれいに整えたものを以下にまとめました。これをコピーして使ってください！
-
 🌍 TripWeave: AI-Powered Personalized Travel Planner
 TripWeave simplifies travel planning by instantly weaving together your unique preferences into a seamless journey. No more juggling a dozen tabs—just tell us where you're headed and what you love, and let our AI do the rest.
 
