@@ -1,125 +1,99 @@
-<<<<<<< HEAD
-# [HTML5 Boilerplate](https://html5boilerplate.com/)
+README.md Template
+Markdown
+全体的に必要な情報が網羅されていて、非常に分かりやすいREADMEになっています！ハッカソンの審査員も、この手順通りに進めれば動かせるはずです。
 
-[![Build status](https://github.com/h5bp/html5-boilerplate/workflows/Build%20status/badge.svg)](https://github.com/h5bp/html5-boilerplate/actions?query=workflow%3A%22Build+status%22+branch%3Amain)
-[![LICENSE](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://github.com/h5bp/html5-boilerplate/blob/main/LICENSE.txt)
-[![NPM Downloads](https://img.shields.io/npm/dt/html5-boilerplate.svg)](https://www.npmjs.com/package/html5-boilerplate)
-[![github-stars-image](https://img.shields.io/github/stars/h5bp/html5-boilerplate.svg?label=github%20stars)](https://github.com/h5bp/html5-boilerplate)
+ただ、情報の重複（Prerequisitesが2回出てくるなど）を整理し、Markdownのコードブロック（黒い背景の枠）を正しく閉じることで、よりプロフェッショナルな見た目になります。
 
-HTML5 Boilerplate is a professional front-end template for building
-fast, robust, and adaptable web apps or sites.
+最終版として、きれいに整えたものを以下にまとめました。これをコピーして使ってください！
 
-This project is the product of over 10 years of iterative development and
-community knowledge. It does not impose a specific development
-philosophy or framework, so you're free to architect your code in the
-way that you want.
+🌍 TripWeave: AI-Powered Personalized Travel Planner
+TripWeave simplifies travel planning by instantly weaving together your unique preferences into a seamless journey. No more juggling a dozen tabs—just tell us where you're headed and what you love, and let our AI do the rest.
 
-- [Homepage](https://html5boilerplate.com/)
-- [Source Code](https://github.com/h5bp/html5-boilerplate)
+✨ Key Features
+Intelligent Personalization: Leverages user profiles stored in SurrealDB to tailor every recommendation.
 
-## About This Repository
+Dynamic Itinerary Generation: Uses LangGraph to manage complex, multi-step planning workflows.
 
-This repository is where HTML5-Boilerplate is authored. Some of the tools,
-files and processes that you see here are solely for the _production_ of
-HTML5 Boilerplate and are not _part_ of HTML5 Boilerplate. For one example, the
-[gulpfile.mjs](https://github.com/h5bp/html5-boilerplate/blob/main/gulpfile.mjs)
-script is used to _build_ the project. It's not part of the project itself.
+Context-Aware Suggestions: Adapts to constraints like budget, walking preferences, and specific interests.
 
-The project we publish is represented by the contents of the `/dist/`
-folder. Everything else in this repository is used to author the project.
+🛠 Tech Stack
+AI/LLM: Google Gemini 1.5 Flash (via LangChain/LangGraph)
 
-Think of it this way, in the same way that you don't clone [vuejs/core](https://github.com/vuejs/core)
-to create a Vue.js app, you don't need to clone this repository to start a new
-site or app based on HTML5 Boilerplate.
+Backend: Python, FastAPI
 
-So, if you're looking for a quick start template to build a website or
-application, look at the options in the
-[Quick Start](https://github.com/h5bp/html5-boilerplate#quick-start) section of this document.
+Database: SurrealDB (Multi-model database for flexible travel data)
 
-If you want to help us _improve_ HTML5 Boilerplate then you can start with the documentation [here](.github/CONTRIBUTING.md), which includes steps to clone this repo in order to get it set up for development.
+Frontend: Node.js
 
-## Quick Start
+🚀 Getting Started
+1. Prerequisites
+Node.js (for Frontend)
 
-Choose one of the following options:
+Python 3.10+ (for AI Backend)
 
-- Using the [create-html5-boilerplate](https://github.com/h5bp/create-html5-boilerplate)
-  script, instantly fetch the latest npm published package (or any version
-  available on npm) with `npx`, `npm init` or `yarn create` without having to
-  install any dependencies. Running the following `npx` command installs the
-  latest version into a folder called `new-site`
+SurrealDB (Installed and running on your machine)
 
-  ```bash
-  npx create-html5-boilerplate new-site
-  cd new-site
-  npm install
-  npm run start
-  ```
+2. Environment Setup
+Create a .env file in the python-ai directory and add your credentials:
 
-- Using our new [Template Repository](https://github.com/h5bp/html5-boilerplate-template)
-  create a new GitHub repository based on the latest code from the main branch of HTML5
-  Boilerplate.
+GOOGLE_API_KEY=AIzaSyCdAZ9p8aG8YKrH-DrpWce67VEukZ2-hj8
+SURREAL_DB_URL=ws://127.0.0.1:8001/rpc
+SURREAL_USER=root
+SURREAL_PASS=root
+SURREAL_NS=tripweave_ns
+SURREAL_DB=trip
+3. Execution Steps
+To run TripWeave, you need to start three separate processes in different terminal tabs:
 
-- Install with [npm](https://www.npmjs.com/): `npm install html5-boilerplate`
-  or [yarn](https://yarnpkg.com/): `yarn add html5-boilerplate`. The resulting
-  `node_modules/html5-boilerplate/dist` folder represents the latest version of
-  the project for end users. Depending on what you want to use and how you want
-  to use it, you may have to copy and paste the contents of that folder into
-  your project directory.
+Tab 1: Database (SurrealDB)
+Bash
+surreal start --bind 127.0.0.1:8001 --user root --pass root rocksdb:tripweave.db
+Tab 2: AI Backend (Python)
+Bash
+cd python-ai
+# Setup virtual environment (Optional but recommended)
+python3 -m venv tripweave_env
+source tripweave_env/bin/activate
 
-- Download the latest stable release from
-  [here](https://github.com/h5bp/html5-boilerplate/releases/download/v9.0.0/html5-boilerplate_v9.0.0.zip). This zip file is a
-  snapshot of the `dist` folder. On Windows, Mac and from the file manager on
-  Linux unzipping this folder will output to a folder named something like
-  `html5-boilerplate_v9.0.0`. From the command-line, you will need to create a
-  folder and unzip the contents into that folder.
+# Install dependencies and start
+pip install -r requirements.txt
+python3 main.py
+Tab 3: Frontend (Node.js)
+Bash
+# From the project root
+node app.js
+4. Database Initialization (Important!) ⚠️
+Since the AI requires a user profile to generate personalized plans, please initialize the required data. Run the following command:
 
-  ```bash
-  mkdir html5-boilerplate
-  unzip html5-boilerplate*.zip -d html5-boilerplate
-  ```
+Bash
+surreal sql --endpoint http://127.0.0.1:8001 --user root --pass root --ns tripweave_ns --db trip
+Then, execute this SQL query in the shell:
 
-## Features
+SQL
+-- Create a default traveler profile
+CREATE traveller:idiots SET
+    name = "The Weekend Group",
+    preferences = {
+        interests: ["Budget-friendly dining", "Historical landmarks", "Local markets"],
+        walking_preference: "prefers public transport over walking"
+    };
 
-- A finely-tuned starter template: Reap the benefits of 10 years of analysis,
-  research and experimentation by over 200 contributors.
-- Designed with progressive enhancement in mind.
-- Includes:
-  - Placeholder Open Graph elements and attributes.
-  - An example package.json file with [WebPack](https://webpack.js.org/) commands
-    built in to jumpstart application development.
-  - Placeholder CSS Media Queries.
-  - Useful CSS helper classes.
-  - Default print styles, performance optimized.
-  - "Delete-key friendly." Easy to strip out parts you don't need.
-  - Extensive documentation.
+-- Initialize an active trip
+CREATE trip SET
+    traveller_id = traveller:idiots,
+    destination = "London",
+    status = "active",
+    updated_at = time::now();
+🏗 System Architecture
+TripWeave uses a Graph-based workflow (LangGraph) to ensure that the AI doesn't just "chat," but actually executes logic:
 
-## Browser Support
+Extraction: Identifies user intent and destination.
 
-HTML5-Boilerplate supports the latest, stable releases of all major browsers.
+Context Retrieval: Fetches history and preferences from SurrealDB.
 
-Check the `default` configuration from [Browserslist](https://browsersl.ist/#q=defaults)
-for more details on browsers and versions covered.
+Plan Weaving: Generates and formats the final itinerary.
 
-## Documentation
-
-Take a look at the [documentation table of contents](docs/TOC.md). This
-documentation is bundled with the project which makes it available for offline
-reading and provides a useful starting point for any documentation you want to
-write about your project.
-
-## Contributing
-
-Hundreds of developers have helped to make the HTML5 Boilerplate. Anyone is
-welcome to [contribute](.github/CONTRIBUTING.md). However, if you decide to get
-involved, please take a moment to review the [guidelines](.github/CONTRIBUTING.md):
-
-- [Bug reports](.github/CONTRIBUTING.md#bugs)
-- [Feature requests](.github/CONTRIBUTING.md#features)
-- [Pull requests](.github/CONTRIBUTING.md#pull-requests)
-
-## License
-
-The code is available under the [MIT license](LICENSE.txt).
-=======
-# tripweave
->>>>>>> 7bc46b450fbd92ec54bfe0819752ea78bf2b4373
+👥 Contributors
+Injoo Moon/Backend & AI Workflow Lead
+Jigar Polra/Software Engineer
+Harena Toyokawa/Frontend Developer | UI/UX Design
