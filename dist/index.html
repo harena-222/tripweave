@@ -1,100 +1,246 @@
 <!doctype html>
-<html lang="">
+<html lang="en">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Make Your Trip</title>
+  <title>TripWeave - AI Travel Planner</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <link rel="stylesheet" href="css/style.css">
-  <meta name="description" content="">
+  <style>
+    /* Professional styling for Markdown-generated tables */
+    .prose table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
 
-  <meta property="og:title" content="">
-  <meta property="og:type" content="">
-  <meta property="og:url" content="">
-  <meta property="og:image" content="">
-  <meta property="og:image:alt" content="">
+    .prose th,
+    .prose td {
+      border: 1px solid #f3f4f6;
+      padding: 12px 16px;
+      text-align: left;
+    }
 
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" href="/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icon.png">
+    .prose th {
+      background-color: #f9fafb;
+      font-weight: 700;
+      color: #1f2937;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
 
-  <link rel="manifest" href="site.webmanifest">
-  <meta name="theme-color" content="#fafafa">
+    .prose td {
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+
+    .prose tr:nth-child(even) {
+      background-color: #fcfcfc;
+    }
+
+    /* Animation */
+    .fade-in-up {
+      animation: fadeInUp 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Active Tab Style */
+    .tab-active {
+      background-color: white !important;
+      color: #7c3aed !important;
+      /* violet-600 */
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  </style>
 </head>
 
-<body class="bg-gradient-to-br from-pink-100 to-indigo-100 min-h-screen flex items-center justify-center">
-  <div class="container max-w-lg mx-auto p-8 bg-white shadow-xl rounded-2xl">
-    <h1 class="text-3xl font-extrabold text-pink-500 mb-6 text-center">Make Your Trip</h1>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen flex items-center justify-center p-6">
+  <div class="container max-w-3xl mx-auto p-10 bg-white shadow-2xl rounded-3xl border border-slate-100">
+    <header class="text-center mb-10">
+      <h1
+        class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-600 tracking-tight">
+        TripWeave</h1>
+      <p class="text-slate-400 mt-3 font-medium">Your intelligent graph-powered travel guide</p>
+    </header>
 
-    <form id="tripForm" class="flex flex-col gap-4">
+    <div class="flex p-1 bg-slate-100 rounded-2xl mb-8">
+      <button id="planTabBtn" class="tab-btn flex-1 py-3 text-sm font-bold rounded-xl transition-all tab-active">
+        📝 Planning
+      </button>
+      <button id="activeTripBtn"
+        class="tab-btn flex-1 py-3 text-sm font-bold rounded-xl text-slate-500 hover:text-violet-600 transition-all">
+        🏃‍♂️ Active Trip
+      </button>
+      <button id="historyTabBtn"
+        class="tab-btn flex-1 py-3 text-sm font-bold rounded-xl text-slate-500 hover:text-violet-600 transition-all">
+        🏠 Visited & Ratings
+      </button>
+    </div>
+
+    <form id="tripForm" class="space-y-4">
       <textarea id="userInput"
-        class="w-full border-2 border-gray-200 rounded-lg p-3 focus:border-pink-400 focus:outline-none transition resize-none overflow-y-auto min-h-[48px] max-h-32"
-        placeholder="How can I help you?" required></textarea>
+        class="w-full border-2 border-slate-100 rounded-2xl p-5 focus:border-violet-300 focus:ring-4 focus:ring-violet-50 transition-all outline-none resize-none min-h-[120px] text-slate-700 text-lg shadow-inner"
+        placeholder="Where do you want to explore? (e.g., 'A rainy day in London' or 'Best sushi in Tokyo')"></textarea>
 
       <button type="submit" id="sendBtn"
-        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition duration-200 shadow-md">
-        Plan My Trip
+        class="w-full bg-gradient-to-r from-pink-500 to-violet-600 hover:from-pink-600 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-[0.98] text-lg">
+        Generate My Plan
       </button>
     </form>
 
-    <p id="result" class="mt-6 text-gray-700 leading-relaxed"></p>
+    <div id="result" class="mt-10"></div>
   </div>
+
   <script>
-    // フォームの送信イベントを直接拾う（Enterキーとクリック両方に対応）
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
+
+    // 🌟 Common function to render results (to keep your logic clean)
+    function renderAIOutput(aiData) {
+      const resultElement = document.getElementById('result');
+      const displayType = aiData.display_type || 'text_only';
+      let themeClasses = "border-slate-100 bg-white";
+      let icon = "✨";
+
+      if (displayType === 'itinerary_table') {
+        themeClasses = "border-violet-100 bg-violet-50/10";
+        icon = "📅";
+      } else if (displayType === 'recommendation_list') {
+        themeClasses = "border-emerald-100 bg-emerald-50/10";
+        icon = "🍴";
+      } else if (displayType === 'alert') {
+        themeClasses = "border-amber-100 bg-amber-50/30";
+        icon = "🚨";
+      }
+
+      let rawAnswer = aiData.final_answer || "";
+      const fixedAnswer = rawAnswer
+        .replace(/([^])\|/, "$1\n\n|")
+        .replace(/\|\s+\|/g, "|\n|");
+      const renderedMarkdown = marked.parse(fixedAnswer);
+
+      resultElement.innerHTML = `
+        <div class="fade-in-up border-2 ${themeClasses} p-8 rounded-3xl shadow-sm space-y-6">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${icon}</span>
+              <h3 class="text-2xl font-bold text-slate-800">
+                ${aiData.extracted_entities?.destination || 'Global Explorer'}
+              </h3>
+            </div>
+            <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-400">
+              ${displayType.replace('_', ' ')}
+            </span>
+          </div>
+          <div class="prose prose-slate max-w-none text-slate-600 leading-relaxed font-medium">
+            ${renderedMarkdown}
+          </div>
+          ${aiData.extracted_entities?.interests?.length > 0 ? `
+            <div class="flex flex-wrap gap-2 pt-4 border-t border-slate-50">
+              ${aiData.extracted_entities.interests.map(item => {
+        const tagName = typeof item === 'object' ? item.name : item;
+        return `<span class="bg-white border border-slate-100 text-slate-500 text-xs px-4 py-1.5 rounded-full shadow-sm font-semibold">#${tagName}</span>`;
+      }).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // --- Tab Switching Logic ---
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('tab-active', 'bg-white', 'text-violet-600', 'shadow-sm'));
+        btn.classList.add('tab-active');
+
+        // Toggle input form visibility based on tab
+        const tripForm = document.getElementById('tripForm');
+        const resultElement = document.getElementById('result');
+
+        if (btn.id === 'planTabBtn') {
+          tripForm.classList.remove('hidden');
+          resultElement.innerHTML = '';
+        } else {
+          tripForm.classList.add('hidden');
+        }
+      });
+    });
+
+    // 🌟 Active Trip Click Handler
+    document.getElementById('activeTripBtn').onclick = async () => {
+      const resultElement = document.getElementById('result');
+      resultElement.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-12 space-y-4">
+          <div class="w-12 h-12 border-4 border-violet-100 border-t-violet-600 rounded-full animate-spin"></div>
+          <p class="text-slate-500 font-medium animate-pulse">Checking your active trip in London...</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch('http://localhost:8000/ai/active-trip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ traveller_id: "traveller:idiots" })
+        });
+        const resData = await response.json();
+        renderAIOutput(resData.data);
+      } catch (error) {
+        resultElement.innerHTML = `
+          <div class="p-8 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+            <p class="text-slate-400 font-medium">No active trip found.</p>
+          </div>`;
+      }
+    };
+
+    // 🌟 Original Submit Handler (Maintained Structure)
     document.getElementById('tripForm').onsubmit = async (event) => {
       event.preventDefault();
-
       const input = document.getElementById('userInput').value.trim();
       const resultElement = document.getElementById('result');
-
       if (!input) return;
 
       resultElement.innerHTML = `
-        <div class="animate-pulse text-gray-500 italic">Designing your travel plan for ${input}...</div>
-    `;
+        <div class="flex flex-col items-center justify-center py-12 space-y-4">
+          <div class="w-12 h-12 border-4 border-violet-100 border-t-violet-600 rounded-full animate-spin"></div>
+          <p class="text-slate-500 font-medium animate-pulse">Weaving your perfect itinerary...</p>
+        </div>
+      `;
 
       try {
-        const response = await fetch('http://localhost:3000/api/trip', {
+        const response = await fetch('http://localhost:8000/ai/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ destination: input })
+          body: JSON.stringify({
+            raw_prompt: input,
+            traveller_id: "traveller:idiots"
+          })
         });
-
-        if (!response.ok) throw new Error(`Status: ${response.status}`);
-
         const resData = await response.json();
-        // Pythonからの入れ子構造 (aiResult.data) を考慮して抽出
-        const aiData = resData.details;
-        const entities = aiData.extracted_entities;
-
-        // ★ここで表示内容を構築
-        resultElement.innerHTML = `
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-pink-100 space-y-4">
-                <div class="flex items-center gap-2">
-                    <span class="text-2xl">📍</span>
-                    <h3 class="text-xl font-bold text-gray-800">Location: ${entities.destination || 'Not specified'}</h3>
-                </div>
-
-                <div class="border-t border-gray-100 pt-4">
-                    <p class="text-sm font-semibold text-pink-500 uppercase tracking-wider mb-1">Plan Summary</p>
-                    <p class="text-gray-700 leading-relaxed text-lg">
-                        ${aiData.final_summary.replace('{destination}', entities.destination || 'your destination').replace('{date_reference}', entities.date_reference || 'soon')}
-                    </p>
-                </div>
-
-                ${entities.interests.length > 0 ? `
-                <div class="flex flex-wrap gap-2 pt-2">
-                    ${entities.interests.map(interest => `<span class="bg-indigo-50 text-indigo-600 text-xs px-3 py-1 rounded-full">#${interest}</span>`).join('')}
-                </div>
-                ` : ''}
-            </div>
-        `;
+        renderAIOutput(resData.data);
       } catch (error) {
-        console.error(error);
-        resultElement.innerHTML = `<p class="text-red-500 font-bold">Failed to connect. Try again later.</p>`;
+        console.error("Fetch Error:", error);
+        resultElement.innerHTML = `<div class="p-8 bg-rose-50 border-2 border-rose-100 rounded-3xl text-center">...</div>`;
       }
     };
   </script>

@@ -5,6 +5,7 @@ from core.domain.intents import TripIntent
 class TripWeaveState(TypedDict):
     raw_prompt: str
     traveller_id: str
+    display_type: str
 
     intent: Optional[TripIntent]
     extracted_entities: Optional[Dict[str, Any]]
@@ -27,9 +28,13 @@ class TripWeaveState(TypedDict):
     final_answer: Optional[str]
     validation_errors: Optional[List[str]]
 
+    alternative_suggestions: Optional[List[str]]
     trip_payload: Optional[Dict[str, Any]]
     day_plan_payload: Optional[Dict[str, Any]]
     preference_payload: Optional[Dict[str, Any]]
     disruption_payload: Optional[Dict[str, Any]]
+    suggestion_request: Optional[Dict[str, Any]]
     decision_payload: Optional[Dict[str, Any]]
     relationship_updates: Optional[List[Dict[str, Any]]]
+    activities: list[dict]
+    activity_payloads: list[dict]

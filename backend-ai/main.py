@@ -5,10 +5,27 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from core.workflow import build_graph
 from core.nodes.extract_request_meaning import extract_request_meaning, TripWeaveExtraction
+from fastapi.middleware.cors import CORSMiddleware
+from surrealdb import AsyncSurreal
 import json
+
+def make_record_id(table: str, *parts: str) -> str:
+    safe_parts = [
+        str(part).replace(" ", "_").replace(":", "_").lower()
+        for part in parts
+    ]
+    return f"{table}:{'_'.join(safe_parts)}"
 
 # 1. Initialize FastAPI app
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allow your HTML to access the server
+    allow_credentials=True,
+    allow_methods=["*"], # Allow OPTIONS, POST, GET, etc.
+    allow_headers=["*"],
+)
 
 # 3. Request model for the API endpoint
 class UserRequest(BaseModel):
@@ -18,7 +35,13 @@ class UserRequest(BaseModel):
 class ExtractionData(BaseModel):
     intent: str
     extracted_entities: Dict[str, Any]
+    display_type: Optional[str] = None
     final_summary: Optional[str] = None
+    final_answer: Optional[str] = None
+    alternative_suggestions: List[str] = Field(default_factory=list)
+    trip_payload: Optional[Dict[str, Any]] = None
+    day_plan_payload: Optional[Dict[str, Any]] = None
+    preference_payload: Optional[Dict[str, Any]] = None
     disruption_payload: Optional[Dict[str, Any]] = None
     decision_payload: Optional[Dict[str, Any]] = None
     relationship_updates: List[Dict[str, Any]] = Field(default_factory=list)
@@ -54,19 +77,6 @@ async def process_meaning(request: UserRequest):
                 "intent": final_state.get("intent", "unknown"),
                 "extracted_entities": final_state.get("extracted_entities", {}),
                 "final_summary": final_state.get("final_summary"),
-                "disruption_payload": final_state.get("disruption_payload"),
-                "decision_payload": final_state.get("decision_payload"),
-                "relationship_updates": final_state.get("relationship_updates", [])
-            },
-            "next_action": final_state.get("next_action", "unknown_flow"),
-        }
-
-        response_data = {
-            "status": "success",
-            "data": {
-                "intent": final_state.get("intent", "unknown"),
-                "extracted_entities": final_state.get("extracted_entities", {}),
-                "final_summary": final_state.get("final_summary"),
                 "final_answer": final_state.get("final_answer"),
                 "alternative_suggestions": final_state.get("alternative_suggestions", []),
                 "trip_id": final_state.get("trip_id"),
@@ -90,6 +100,74 @@ async def process_meaning(request: UserRequest):
     except Exception as e:
         logger.error(f"Error processing request: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"AI Processing Error: {str(e)}")
+
+# --- 5. Active Trip Endpoint (추가되는 부분) ---
+
+class ActiveTripRequest(BaseModel):
+    traveller_id: str
+
+@app.post("/ai/active-trip")
+async def get_active_trip(request: ActiveTripRequest):
+    DB_URL = os.getenv("SURREAL_DB_URL", "ws://localhost:8001/rpc")
+    SURREAL_USER = os.getenv("SURREAL_USER", "root")
+    SURREAL_PASS = os.getenv("SURREAL_PASS", "root")
+    SURREAL_NS = os.getenv("SURREAL_NS", "tripweave_ns")
+    SURREAL_DB = os.getenv("SURREAL_DB", "tripweave_db")
+    try:
+        async with AsyncSurreal(DB_URL) as db:
+            await db.signin(
+            {
+                "username": SURREAL_USER,
+                "password": SURREAL_PASS,
+            })
+            await db.use(SURREAL_NS, SURREAL_DB)
+
+            trip_query = """
+            SELECT * FROM trip
+            WHERE traveller_id = $traveller_id AND status = 'active'
+            ORDER BY updated_at DESC LIMIT 1;
+            """
+            trip_results = await db.query(trip_query, {"traveller_id": request.traveller_id})
+            logger.info(f"--- [DEBUG] TRIPS FROM DB: {trip_results} ---")
+
+            if not trip_results:
+                return {"status": "error", "message": "No active trip found"}
+
+            active_trip = trip_results[0]
+            trip_id = active_trip["id"].id
+            logger.info(f"--- [DEBUG] active_trip FROM DB: {active_trip} ---")
+            logger.info(f"--- [DEBUG] trip_id FROM DB: {trip_id} ---")
+
+            plan_query = """
+            SELECT * FROM day_plan
+            WHERE trip_id = $trip_id
+            ORDER BY updated_at DESC LIMIT 1;
+            """
+            plan_results = await db.query(plan_query, {"trip_id": trip_id})
+            logger.info(f"--- [DEBUG] PLANS FROM DB: {plan_results} ---") # 🌟 이 로그가 찍히는지 확인!
+
+            final_plan = plan_results[0]["result"][0] if plan_results and plan_results[0].get("result") else {}
+
+            response_data = {
+                "status": "success",
+                "data": {
+                    "display_type": "itinerary_table",
+                    "extracted_entities": {
+                        "destination": active_trip.get("destination", "London"),
+                        "interests": active_trip.get("interests", []) #
+                    },
+                    "final_summary": final_plan.get("final_summary", f"{active_trip.get('destination')} 여행이 활성화되어 있습니다."),
+                    "final_answer": final_plan.get("final_answer", "상세 일정을 불러올 수 없습니다."),
+                    "trip_id": str(trip_id)
+                }
+            }
+
+            logger.info(f"--- ACTIVE TRIP FETCHED ---\n{json.dumps(response_data, indent=2)}")
+            return response_data
+
+    except Exception as e:
+        logger.error(f"Error fetching active trip: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

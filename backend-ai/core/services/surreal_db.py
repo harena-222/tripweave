@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 from typing import Any
 from surrealdb import AsyncSurreal
+from contextlib import asynccontextmanager
 try:
     from surrealdb import RecordID
 except Exception:
@@ -33,6 +34,14 @@ async def get_user_profile(traveller_id: str) -> dict[str, Any]:
         print(f"--- [SurrealDB] Successfully fetched: {sanitised_profile} ---")
 
         return sanitised_profile or {"message": "Profile not found", "id": traveller_id}
+
+@asynccontextmanager
+async def get_db_connection():
+    """helper function"""
+    async with AsyncSurreal(DB_URL) as db:
+        await db.signin({"username": SURREAL_USER, "password": SURREAL_PASS})
+        await db.use(SURREAL_NS, SURREAL_DB)
+        yield db
 
 async def save_day_plan(day_plan_payload: dict) -> dict:
     day_plan_id = day_plan_payload["id"]
@@ -90,7 +99,8 @@ async def persist_relationship_updates(relationship_updates: list[dict]) -> None
 async def save_preference_update(preference_payload: dict) -> dict:
     traveller_id = preference_payload["id"]
     data = {k: v for k, v in preference_payload.items() if k != "id"}
-    return await upsert_record(traveller_id, data)
+    async with get_db_connection() as db:
+        return await upsert_record(db, traveller_id, data)
 
 async def save_disruption(disruption_payload: dict[str, Any]) -> dict[str, Any]:
     """

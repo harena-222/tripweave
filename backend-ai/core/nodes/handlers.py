@@ -46,8 +46,7 @@ def handle_create_day_plan(state: TripWeaveState) -> dict:
     traveller_slug = traveller_id.split(":")[-1]
 
     trip_id = state.get("trip_id")
-    if not trip_id:
-        trip_id = make_record_id("trip", traveller_slug, destination, "active")
+    trip_id = make_record_id("trip", traveller_slug, destination, "active")
 
     day_plan_id = make_record_id("day_plan", traveller_slug, date_reference)
     decision_id = make_record_id("decision", "create_day_plan", traveller_slug, date_reference)
@@ -288,6 +287,8 @@ def handle_update_preference(state: TripWeaveState) -> dict:
     profile = _get_profile(state)
     entities = _get_entities(state)
 
+    extracted = state.get("extracted_entities", {})
+    interests_list = [item['name'] for item in extracted.get("interests", [])]
     traveller_id = state.get("traveller_id", "traveller:unknown")
     traveller_slug = traveller_id.split(":")[-1]
 
@@ -318,16 +319,18 @@ def handle_update_preference(state: TripWeaveState) -> dict:
         ),
         "trip_payload": trip_payload,
         "preference_payload": {
-            "id": traveller_id,
-            "walking_preference": new_walking_preference,
+            "id": state.get("traveller_id"),
+            "interests": extracted.get("interests", []),
+            "walking_preference": extracted.get("walking_preference", "unspecified"),
+            "urgency": extracted.get("urgency", "flexible")
         },
         "decision_payload": {
             "id": decision_id,
             "type": "update_preference",
-            "reason": "User updated their travel preference",
+            "reason": "User updated personal travel preferences",
             "summary": (
-                f"Walking preference changed from {old_walking_preference} "
-                f"to {new_walking_preference}."
+                f"Updated interests with: {', '.join(interests_list)}. "
+                f"Walking preference is now {new_walking_preference}."
             ),
         },
         "relationship_updates": [
