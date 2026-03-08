@@ -192,14 +192,18 @@ async def persist_replan_result(
                 src = update["from"]
                 dst = update["to"]
 
+                print(f"--- [SurrealDB] relationship update: action={update['action']} rel={rel} src={src} dst={dst} ---")
+
                 if update["action"] == "create":
-                    # RELATE creates a graph edge record
-                    await db.query(f"RELATE {src}->{rel}->{dst} SET updated_at = time::now();")
+                    query = f"RELATE {src}->{rel}->{dst} SET updated_at = time::now();"
+                    print(f"--- [SurrealDB] RELATE query: {query} ---")
+                    await db.query(query)
                     saved["relationships_applied"] += 1
 
                 elif update["action"] == "remove":
-                    # IMPORTANT: In SurrealDB edges, 'out' is the origin, 'in' is the target
-                    await db.query(f"DELETE {rel} WHERE out = {src} AND in = {dst};")
+                    query = f"DELETE {rel} WHERE out = {src} AND in = {dst};"
+                    print(f"--- [SurrealDB] DELETE relation query: {query} ---")
+                    await db.query(query)
                     saved["relationships_applied"] += 1
 
         return saved

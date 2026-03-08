@@ -8,12 +8,20 @@ from core.nodes.extract_request_meaning import extract_request_meaning, TripWeav
 from fastapi.middleware.cors import CORSMiddleware
 from surrealdb import AsyncSurreal
 import json
+import re
 
 def make_record_id(table: str, *parts: str) -> str:
-    safe_parts = [
-        str(part).replace(" ", "_").replace(":", "_").lower()
-        for part in parts
-    ]
+    safe_parts = []
+
+    for part in parts:
+        text = str(part).lower()
+        text = text.replace(":", "_")
+        text = re.sub(r"[^a-z0-9_]+", "_", text)
+        text = re.sub(r"_+", "_", text).strip("_")
+
+        if text:
+            safe_parts.append(text)
+
     return f"{table}:{'_'.join(safe_parts)}"
 
 # 1. Initialize FastAPI app

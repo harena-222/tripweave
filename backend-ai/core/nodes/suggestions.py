@@ -1,18 +1,23 @@
 from __future__ import annotations
 import uuid
+import re
 
 from core.state import TripWeaveState
 from core.services.llm_suggestions import generate_suggestions
 
-
 def make_activity_id(traveller_id: str, place_name: str) -> str:
-    """Generates a unique Activity ID by combining the place name and user ID."""
-    safe_name = str(place_name).replace(" ", "_").lower()
+    """Generate a safe unique Activity record ID for SurrealDB."""
     slug = traveller_id.split(":")[-1] if ":" in traveller_id else traveller_id
 
-    # Appends a short random string (UUID) to handle visiting the same place twice.
-    short_uuid = str(uuid.uuid4())[:4]
-    return f"activity:{slug}_{safe_name}_{short_uuid}"
+    safe_slug = re.sub(r"[^a-z0-9_]+", "_", slug.lower())
+    safe_slug = re.sub(r"_+", "_", safe_slug).strip("_")
+
+    safe_name = re.sub(r"[^a-z0-9_]+", "_", str(place_name).lower())
+    safe_name = re.sub(r"_+", "_", safe_name).strip("_")
+
+    short_uuid = uuid.uuid4().hex[:4]
+
+    return f"activity:{safe_slug}_{safe_name}_{short_uuid}"
 
 
 async def generate_alternative_suggestions(state: TripWeaveState) -> dict:
