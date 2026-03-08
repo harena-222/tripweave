@@ -35,7 +35,10 @@ def handle_create_day_plan(state: TripWeaveState) -> dict:
 
     destination = entities.get("destination") or profile.get("home_destination") or "your destination"
     date_reference = entities.get("date_reference") or "today"
-    interests = entities.get("interests", [])
+    interests_list = [item['name'] for item in entities.get("interests", [])]
+    interests = f"{', '.join(interests_list)}"
+
+
     walking_preference = (
         entities.get("walking_preference")
         or profile.get("walking_preference")

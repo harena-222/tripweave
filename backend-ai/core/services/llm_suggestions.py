@@ -70,6 +70,35 @@ suggestion_chain = suggestion_prompt | structured_llm
 
 # --- 4. Node Logic with Context Injection ---
 
+def _normalise_profile(user_context: dict) -> dict:
+    if not user_context:
+        return {}
+
+    profile = user_context.get("profile")
+
+    if isinstance(profile, list):
+        first = profile[0] if profile else {}
+        return first if isinstance(first, dict) else {}
+
+    if isinstance(profile, dict):
+        return profile
+
+    return {}
+
+def _extract_interest_names(items) -> list[str]:
+    if not isinstance(items, list):
+        return []
+
+    names: list[str] = []
+
+    for item in items:
+        if isinstance(item, dict) and "name" in item and isinstance(item["name"], str):
+            names.append(item["name"])
+        elif isinstance(item, str):
+            names.append(item)
+
+    return names
+
 async def generate_suggestions(
     *,
     mode: str,
@@ -86,26 +115,13 @@ async def generate_suggestions(
     permanent user preferences stored in the database.
     """
 
-    # 🌟 Step 1: Extract Permanent Interests from the User Profile
-    # This ensures that if the user likes 'scuba diving', it's always considered.
-    profile = user_context.get("profile", [{}])[0] if user_context else {}
-    permanent_interests = []
+    profile = _normalise_profile(user_context)
 
-    # Extract names from the 'interests' field in the traveller record
-    raw_permanent = profile.get("interests", [])
-    for p_item in raw_permanent:
-        if isinstance(p_item, dict) and "name" in p_item:
-            permanent_interests.append(p_item["name"])
-        elif isinstance(p_item, str):
-            permanent_interests.append(p_item)
+    print("--- [Suggestions] raw user_context ---", user_context)
+    print("--- [Suggestions] normalised profile ---", profile)
 
-    # 🌟 Step 2: Extract Current Interests from the recent user prompt
-    current_interests = []
-    for c_item in interests:
-        if isinstance(c_item, dict) and "name" in c_item:
-            current_interests.append(c_item["name"])
-        elif isinstance(c_item, str):
-            current_interests.append(c_item)
+    permanent_interests = _extract_interest_names(profile.get("interests", []))
+    current_interests = _extract_interest_names(interests)
 
     # 🌟 Step 3: Merge and De-duplicate
     # This 'combined_interests' list is the secret sauce for personalization.
