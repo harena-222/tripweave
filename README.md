@@ -262,7 +262,7 @@ SurrealDB (Installed and running on your machine)
 2. Environment Setup
    Create a .env file in the python-ai directory and add your credentials:
 
-GOOGLE_API_KEY=AIzaSyCdAZ9p8aG8YKrH-DrpWce67VEukZ2-hj8
+GOOGLE_API_KEY="your token"
 SURREAL_DB_URL=ws://127.0.0.1:8001/rpc
 SURREAL_USER=root
 SURREAL_PASS=root
